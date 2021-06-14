@@ -1,0 +1,72 @@
+\documentclass[12pt]{book}
+\usepackage{amsmath,amsfonts,amssymb,amsthm,epsfig,epstopdf,array}
+\usepackage{graphicx}
+\usepackage{fourier}
+\usepackage{makeidx}
+
+%\includeonly{meanvalue}
+
+%\usepackage{multicol}
+\theoremstyle{plain}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem*{cor}{Corollary}
+\newtheorem{prob}[thm]{Problem}
+
+\makeindex
+\newcommand{\I}{\textrm{I}}
+\newcommand{\II}{\textrm{II}}
+
+\renewcommand{\r}{\textbf{R}}
+\newcommand{\N}{\textbf{\bf N}}
+\newcommand{\Z}{\textbf{\bf Z}}
+\newcommand{\Q}{\textbf{\bf Q}}
+\newcommand{\U}{\mathcal{U}}
+
+\newcommand{\lub}{\textbf{\bf lub}}
+\newcommand{\glb}{\textbf{\bf glb}}
+\newcommand{\osc}{\textbf{\bf osc}}
+\newcommand{\Osc}{\textbf{\bf Osc}}
+
+\renewcommand{\v}{\vec{\bf v}}
+\newcommand{\w}{\vec{\bf w}}
+\renewcommand{\u}{\vec{\bf u}}
+\renewcommand{\a}{\vec{\bf a}}
+
+\newcommand{\h}{\vec{\bf h}}
+\renewcommand{\i}{\vec{\bf i}}
+\renewcommand{\j}{\vec{\bf j}}
+\renewcommand{\k}{\vec{\bf k}}
+\newcommand{\A}{\vec{\bf A}}
+\newcommand{\B}{\vec{\bf B}}
+\newcommand{\C}{\vec{\bf C}}
+
+\newcommand{\E}{\vec{\bf E}}
+
+\newcommand{\ur}{\vec{\bf u}_r}
+\newcommand{\ut}{\vec{\bf u}_{\theta}}
+
+\newcommand{\ray}{\overrightarrow}
+\newcommand{\myline}{\overleftrightarrow}
+
+\newcommand{\col}[1]{\left( \begin{array}{c} #1_1 \\ #1_2 \\ #1_3\end{array} \right)}
+
+\begin{document}
+
+    \frontmatter
+    \title{Notes on Mathematics for Programming}
+    \author{Bobby Neal Winters}
+    \date{}
+    \maketitle
+    \tableofcontents
+    \mainmatter
+    
+    \include{integer_division}
+
+    \include{numbers_and_numerals}
+
+
+    \include{bibliography}
+    %\printindex
+\end{document} 

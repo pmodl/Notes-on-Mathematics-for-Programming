@@ -1,0 +1,472 @@
+\chapter{Numbers and Numerals}
+\section{Introduction}\label{intro:numbers_and_numerals}
+Back in the early 1970s when I first began to struggle with the basics of arithmetic, I was introduced to something called ``The New Math.''  The New Math was well-meant like all of the subsequent efforts to improve the instruction of mathematics have been.  It attempted many things, but the thing I am thinking of now is that it made a big deal about separating the concepts of ``numeral'' and number.  A numeral is a means of denoting a number, but a number is the thing itself.
+
+At the time, being about 10 years old, I thought this was stupid, and to be sure I do so now, but for different reasons.
+
+At the time I thought that I already knew the difference between a numeral and a number.  Now I am no longer sure I know what a number is.
+
+In those days, they segued from teaching this distinction to teaching us about Roman Numerals.  They might've also taught us about putting numbers into different bases, but I cannot recall. 
+
+My reason for bringing this all up now is that the purpose of this chapter is to show--to a certain degree of precision--how computers add numbers.  The first step is to represent numbers in a way they can be encoded into the computer, i.e. in binary. The next step is to describe the addition algorithm on a macro level.  The final step, which will be quite protracted, will be to describe how this can be implemented electronically via half-adders, full-adders, logic gates, and mathematically simplified transistors.
+
+This will be done from the point of view of mathematics, not electrical engineering, but giving due respect to the electrical engineers. May God bless them.
+
+\section{Number Representation}\label{section:number_representation}
+In \S \ref{intro:numbers_and_numerals}, I spoke about the distinction between numbers and numerals.  I am interested in representing numbers in a way computers can deal with them.  In a certain sense, the most basic idea of a number is that something is either there or it is not; there is either something or there is nothing; something is either True or it is False.  When there is nothing we can denote it as 0; when there is something we can denote it as 1.  When call this a \emph{boolean} number. \index{boolean}
+
+That first step was a little philosophical and I apologize for that.  The next step is more down to earth: counting.  When we count, something even little children can do, we create the counting numbers which mathematicians refer to as \emph{positive integers} or \emph{natural numbers}: \index{positive integers} \index{natural numbers} 1, 2, 3, 4,\dots. We are giving names to positions in an order. You can think of laying out coins or peanuts or corn nuts or a mixture of all of them while giving them names.
+
+Over the ages, we've learned to be systematic in assigning the names so that we always know how to write down the next number even if we don't know how to pronounce it.  We do this by using the so-called Hindu-Arabic numbers which we more generically refer to as base-ten numbers or decimal numbers. (Note how quickly we become careless about the numeral number distinction in ordinary speech.)
+
+In working with computers, we use base-two numbers which are better known as \emph{binary} numbers: \index{binary} 1, 10, 11, 100 \dots Note that we can go on naming our numbers forever while we very quickly lose the ability to read them in their common names.
+
+It now becomes useful for us to write this in the language of mathematics.  When we have a positive integer $b$, there is an integer $n\ge 0$ and a sequence of boolean numbers $b_0, b_1, \dots, b_n$ such that
+\[
+b = 2^n\cdot b_n + \dots + 2 \cdot b_1 + b_0.
+\]
+For the sake of brevity, we would typically suppress the $2^i$ in the expansion and write this number as $b=(b_nb_{n-1}\dots b_1b_0)_\text{bin}$. At times when no confusion is possible, we will write $b=b_nb_{n-1}\dots b_1b_0$.
+
+\section{Numbers in a Computer}
+As mentioned before, the New Math made a big deal about separating the concepts of numeral and number.  I am now going to make a big deal out of separating a number and its encoding in a computer. Representing the number in binary is just the first step to encoding it.  You may have read somewhere that we use binary numbers because 1 denotes a switch being on and 0 represents a switch being off.  That is not so much wrong as it is incomplete.  Having a 1 can also mean that the voltage is at or above a certain threshhold while having a 0 means that voltage is below that threshhold.  It can also mean other things.  Viewed on paper it is an abstraction.  Abstract thinking is wonderful, but we do need to keep in mind that our abstractions refer to physical entities.  We live in a physical world.
+
+Speaking of living in a physical world, we are limited to the size of number that we can encode.  When we represent a number in binary as $b=b_nb_{n-1}\dots b_1b_0$, each $b_i$ is referred to as a \emph{bit}.  The number $b$ have have just named has $n+1$ bits.  At the time of this writing, computers which can handle numbers 64-bit numbers are quite common.
+
+In this treatment, we will generically talk about $N$-bit numbers and in our examples we will set $N=4$\footnote{Using $N=64$ would add nothing to our understanding and make our exposition impossible to read.  The fact that it would make the writer's life hell is just a coincidence.}.  This will limit us to using only the numbers between 0 and $2^4-1 = 15$, inclusive, in examples but this will not hinder the process we are learning about.
+
+In the language of computer science, we will be dealing with 4-bit unsigned integers.  Dealing with signed integers is only slightly more complicated, but will be deferred to another time.  We will now list all of the 4-bit unsigned integers in Table~\ref{table:4-bit_unsigned_integers}.
+
+\begin{table}\label{table:4-bit_unsigned_integers}
+	\begin{center}
+		\begin{tabular}{cc} 
+			$b$ & $(b)_\text{bin}$ \\  \hline 
+			0 & 0000 \\  
+			1 & 0001  \\  
+			2 & 0010  \\  
+			3 & 0011  \\  
+			4 & 0100 \\  
+			5 & 0101 \\  
+			6 & 0110  \\  
+			7 & 0111  \\
+			8 & 1000  \\  
+			9 & 1001  \\
+			10 & 1010  \\
+			11 & 1011  \\
+			12 & 1100  \\
+			13 & 1101  \\
+			14 & 1110  \\
+			15 & 1111  \\
+		\end{tabular}
+	\end{center}
+\caption{4-bit unsigned integers}
+\end{table}
+
+\section{Binary Addition}
+Though most of you already know how to do binary addition by hand or could at least take a creditable stab at it, I would like to start this section with a simple example.  Consider 11 plus 5 being represented in binary as
+\begin{center}
+	\begin{tabular}{ccccc} 
+		& 1 & 0 & 1 & 1 \\
+	  + & 0 & 1 & 0 & 1
+	\end{tabular}
+\end{center}
+
+We begin the addition algorithm by adding the rightmost bits.  In this case $1 + 1 = 10$.  In our process we will write down the number $s=0$ ($s$ stands for sum) and $c=1$ ($c$ stands for carry).  This will appear as
+\begin{center}
+	\begin{tabular}{ccccc} 
+		& 1 & 0 & $1^1$ & 1 \\
+		+ & 0 & 1 & 0 & 1 \\ \hline
+		&   &   &       & 0
+	\end{tabular}
+\end{center}
+
+Let us note that the first step requires only two inputs: one bit from each of the summands.  There are two outputs: sum and carry.
+
+In the next step, we go to the rightmost but one column. We take the carry from the previous step, which you recall was 1 in this case, and add it to the 1 from the top summand.  This gives us $1+1 = 10$.  We now add the 0 from the lower summand this gives us $10 + 0 = 10$. So we again put down an $s=0$ and carry $c= 1$.  This will appear as
+\begin{center}
+	\begin{tabular}{ccccc} 
+		& 1 & $0^1$ & $1^1$ & 1 \\
+		+ & 0 & 1 & 0 & 1 \\ \hline
+		&   &   &   0    & 0
+	\end{tabular}
+\end{center}
+
+What we need to know from this step is that there are actually three inputs: one bit from each summand as before and the carry value $c$ from the previous step.
+
+Continuing in this way until we are done will give us
+
+\begin{center}
+	\begin{tabular}{ccccc} 
+		& $1^1$ & $0^1$ & $1^1$ & 1 \\
+		+ & 0 & 1 & 0 & 1 \\ \hline
+		&   & 0  &     0  & 0
+	\end{tabular}
+\end{center}
+and
+\begin{center}
+	\begin{tabular}{ccccc} 
+		& $1^1$ & $0^1$ & $1^1$ & 1 \\
+		+ & 0 & 1 & 0 & 1 \\ \hline
+	1	&  0 & 0  &     0  & 0
+	\end{tabular}
+\end{center}
+
+The final sum of 11 and 5 is 16.  This would result in an overflow error on a 4-bit machine.
+
+In the sequel, we will ape this process and create two black box devices: the half-adder and the full-adder.  We will then shed light on what goes on inside these black boxes.  This will take a while.
+
+\subsection{The Half-Adder}
+The \emph{half-adder}\index{half-adder} is an electronic device\footnote{Think of it as a chip.} that will take in two bits and return their sum in the form of two bits called the sum (denotde by $s$) and the carry (denoted by $c$).  How it works is illustrated in Table~\ref{table:half-adder}. 
+
+\begin{table}
+			\begin{center}
+		\begin{tabular}{ccccc}
+			\multicolumn{2}{c}{Inputs}& & \multicolumn{2}{c}{Outputs} \\
+			$b_1$ & $b_2$ &             & $s$ & $c_{out}$ \\ \hline 
+			0   &   0   & $\rightarrow$ & 0   & 0  \\
+			0   &   1   & $\rightarrow$ & 1   & 0  \\			  
+			1   &   0   & $\rightarrow$ & 1   & 0  \\			  
+			1   &   1   & $\rightarrow$ & 0   & 1  \\			  
+		\end{tabular}
+	\end{center}
+\caption{Half-Adder}\label{table:half-adder}
+\end{table}
+The table describes how the half-adder works in a mathematical way.  This is fine, as far as it goes, but when time comes to design a machine we will need to think the half-adder as being a chip that we will plug in to a printed circuit board(PCB).  To aid in this, we have created the diagram in Figure~\ref{figure:half-adder}.
+\begin{figure}
+	\begin{center}
+		\includegraphics[width = 4.0in]{half_adder.png}
+	\end{center}
+	\caption{Half-Adder}\label{figure:half-adder}
+\end{figure}
+In the figure we have inputs labeled $b_1$ and $b_2$.  These will have current or voltage (or the lack thereof) associated with them according to whether they are 1s or 0s.   There is an outflow of current or voltage to $s$ and $c$.
+
+The phrase ``black box'' is meant to evoke mystery.  We know what the black box does, but we do not know how.  Our aim is to dispell this mystery to a certain degree. We will push to the boundary of physics, but we will not step over.
+
+\subsection{Full-Adder}
+We will present a \emph{full-adder}\index{full-adder} in a black box in a way similar to what we did for the half-adder above.  See Table~\ref{table:full-adder}
+\begin{table}
+	\begin{center}
+	\begin{tabular}{cccccc}
+		\multicolumn{3}{c}{Inputs} &  & \multicolumn{2}{c}{Outputs} \\
+		$c_\text{in}$ & $b_1$ & $b_2$ &             & $s$ & $c_\text{out}$ \\ \hline 
+		0 & 0   &   0   & $\rightarrow$ & 0   & 0  \\
+		0 & 0   &   1   & $\rightarrow$ & 1   & 0  \\			  
+		0 & 1   &   0   & $\rightarrow$ & 1   & 0  \\			  
+		0 & 1   &   1   & $\rightarrow$ & 0   & 1  \\		
+		1 & 0   &   0   & $\rightarrow$ & 1   & 0  \\
+		1 & 0   &   1   & $\rightarrow$ & 0   & 1  \\			  
+		1 & 1   &   0   & $\rightarrow$ & 0   & 1  \\			  
+		1 & 1   &   1   & $\rightarrow$ & 1   & 1  \\						  
+	\end{tabular}
+\end{center}
+	\caption{Full-Adder}\label{table:full-adder}
+\end{table}
+Note that we have three inputs the bits $b_1$ and $b_2$ from our summands and the carry from our previous step that we denote as $c_\text{in}$.  We have outputs: our sum $s$ and our carry that we denote as $c_\text{out}$.
+
+As before, we will want to think of this as a chip that will be plugged into a PCB.  We do this in Figure~\ref{figure:full-adder}.
+\begin{figure}
+	\begin{center}
+		\includegraphics[width = 4.0in]{full_adder.png}
+	\end{center}
+	\caption{Full-Adder}\label{figure:full-adder}
+\end{figure}
+Again the lines are standing in for electrical connections, with $c$, $b_1$, and $b_2$ denoting inputs from the bit carried in and the bits from the summands. The outputs $c$ and $s$ denote the bit we carry out and the sum that we write down at this step, respectively.
+
+We wish to justify the terminology half-adder and full-adder by showing that the full-adder is composed of two half-adders.  This is, in fact, ``almost'' true.  We need one more item.  This appears to be a small thing at first, but it will open the world of logic gates to us.
+
+\section{Our First Taste of Logic}
+In \S~\ref{section:number_representation}, we mentioned boolean numbers.  there we said we could use 1 to denote if something was present or a statement was true and 0 if a statement was false or something was absent. This is of use in Boolean Algebra and logic.  These are broad topics whos surface we will only begin to skim. In order to get our toes wet, while finding a way to demystify the full-adder, we will now introduce \emph{logical OR}.
+
+The logical OR operation is an binary operation on bits.  In this context, binary means it has two operands like the plus operation does.  We denote logical OR by the symbol $\vee $.  Let $p$ and $q$ be boolean values or bits.  Then $p\vee  q$ (read as $p$ or $q$) is $0$ exactly when both $p$ and $q$ are $0$ and is equal to $1$ all other times.  We make this specific in Table~\ref{table:logical_or}.
+\begin{table}
+			\begin{center}			
+		\begin{tabular}{ccc}
+			\multicolumn{2}{c}{Inputs} & Output \\
+			$b_1$ & $b_2$ & $b_1\vee b_2$  \\ \hline
+			0     & 0     &    0 \\
+			0     & 1     &    1  \\
+			1     & 0     &    1  \\
+			1     & 1     &   1
+		\end{tabular}
+	\end{center}
+\caption{Logical OR}\label{table:logical_or}
+\end{table}
+
+As with all of our operation, we are interested in ``creating a chip'' to implement this operation and in plugging that chip into a PCB.  As logical OR is a basic operation, there is a standard wiring diagram symbol for it.  We call the symbol an \emph{OR-gate}\index{OR-gate}, and it is shown in Figure~\ref{figure:or_gate}.
+\begin{figure}
+	\begin{center}			
+		\includegraphics[width = 3.0in]{OR_Gate.png}
+	\end{center}
+\caption{An OR-gate}\label{figure:or_gate}
+\end{figure}
+
+Note that the OR-gate is shaped vaguely like an arrowhead.  We can think of the arrowhead as indicating the direction of motion of current through it.  The two horizontal segments on the lefthand side are inputs where the electrical manifestations of $p$ and $q$ are connected.  Let horizontal segment on the right is where the current associated with $p\vee  q$ is output.  
+
+This is just the first of many logic gates.
+
+
+\section{Full-Adder, Revisited}
+Let us now revisit the process of adding binary numbers.  In every step but the first one, we have three inputs: $c$, carry-in; $b_1$, a bit from the first summand; $b_2$, a bit from the second summand.  While using the full-adder to do this creates the impression that this is done in one seemless step, to anyone doing this by hand, it is absolutely clear that we are combining two operations.
+
+First we perform the addition $c + b_1$ on a half-adder, call it $HA_1$. This will yield a carry-out bit that we will call $c_1$ and a sum bit that we will call $s_1$.
+
+After doing this we perform the second operation on another half-adder that we will call $HA_2$.  this will yield a carry-out of $c_2$ and a sum of $s$.  This $s$ is the sum of the full-adder.
+
+The carry-out of the full-adder is obtained by combining $c_1$ and $c2$.  This could be done simply by adding them together, and indeed, this is what we do when we do the work by hand.  However, our purpose here is to try to get something simpler.
+
+Let us first note that \emph{at most} one of the $c_1$ and $c_2$ is equal to 1.  If they are both 0, then $c_1 + c_2 = 0$ and $c_1 \vee  c_2 =0$.  If exactly one of $c_1$ and $c_2$, then $c_1+c_2 = 1$ and $c_1 \vee  c_2 = 1$. Therefore, the final carry-out of our full-adder is $c_1\vee c_2$.  We can therefore diagram a full-adder in term of half-adders as in Figure~\ref{figure:full-adder_in_terms_of_half_adders}.
+\begin{figure}
+		\begin{center}
+		\includegraphics[width = 5.0in]{full_adder_diagram.png}
+	\end{center}
+\caption{Full-Adder in Terms of Half-Adders}\label{figure:full-adder_in_terms_of_half_adders}
+\end{figure}
+
+We are still in a position where we've put something we don't know how to design in terms of transistors into other things we don't know how to design in terms of transistors, but at least we've dealt with the full-adder.  To deal with the half-adder and the OR-gate we will have to learn some more logic.
+
+\section{Other Logical Operators}
+
+In this section, we will learn about two more basic logical operators in addition to OR: AND and NOT. Besides these, we will learn about the composite operators NAND and exclusive OR (XOR).  We will also learn about the corresponding logic gates.
+
+We will denote the binary logical operator AND by the symbol $\wedge$. Given the boolean values $p$ and $q$, $p\wedge q$ will be 1 exactly when both $p$ and $q$ are equal to 1 and for all other combinations $p\wedge q$.  This gives us the Table~\ref{table:logical_and}.
+\begin{table}
+		\begin{center}			
+	\begin{tabular}{ccc}
+		\multicolumn{2}{c}{Inputs} & Output \\
+		$p$ & $q$ & $p\wedge q$  \\ \hline
+		0     & 0     &    0 \\
+		0     & 1     &    0  \\
+		1     & 0     &    0 \\
+		1     & 1     &   1
+	\end{tabular}
+\end{center}
+\caption{Logical AND}\label{table:logical_and}
+\end{table}
+The AND-gate is shown in Figure~\ref{figure:and_gate}.
+\begin{figure}
+		\begin{center}			
+		\includegraphics[width = 1.5in]{AND_Gate.png}
+		\end{center}
+		\caption{AND Gate}\label{figure:and_gate}
+\end{figure}
+
+In contrast to all of the other operators we've encountered, the NOT operator is not a binary operator but a unitary operator.  We denote it by $\neg$.  Given a boolean value $p$, $\neg p$ has the opposite value, that is $\neg 1 = 0$ and $\neg 0 = 1$. We display this in Table~\ref{table:not_operator}.
+\begin{table}
+		\begin{center}
+	\begin{tabular}{cc}
+		$p$ & $\neg p$ \\ \hline 
+		0   & 1  \\ 
+		1   & 0  
+	\end{tabular}
+\end{center}
+\caption{The NOT operator}\label{table:not_operator}
+\end{table}
+It is denoted in electronic diagrams by the symbol in Figure~\ref{figure:not_gate}.
+\begin{figure}
+		\begin{center} 
+		\includegraphics[width= 3.0in]{NOT_Gate.png}
+		\end{center} 	
+	\caption{The NOT gate}\label{figure:not_gate}
+\end{figure}
+
+The NAND operator, as its name would suggest, is a composite of the AND and NOT operators.  We denote this binary operator by $\uparrow$.  If $p$ and $q$ are boolean values, then $p\uparrow q = \neg (p \wedge q)$.  Note that $p\uparrow q$ is 1 except when $p$ and $q$ are both~1.  We build up in this operator in Table~\ref{table:logical_nand}.
+\begin{table}
+		\begin{center}
+	\begin{tabular}{ccccc}
+		$p$ & $q$ & $p\wedge q$ & $\neg (p\wedge q)$ & $p\uparrow q$   \\ \hline
+		0  &   0   &    0          &        1        & 1            \\
+		0  &   1   &    0          &        1        & 1            \\
+		1  &   0   &    0          &        1        & 1            \\
+		1  &   1   &    1          &        0        & 0            \\
+	\end{tabular}
+\caption{Logical NAND}\label{table:logical_nand}
+\end{center}	
+\end{table}
+The NAND gate is in Figure~\ref{figure:nand_gate}.
+\begin{figure}
+		\begin{center}
+		\includegraphics[width = 3.00in]{NAND_Gate.png}
+		\end{center}
+	\caption{NAND Gate}\label{figure:nand_gate}
+\end{figure}
+
+Our final composite operator is \emph{exclusive OR}\index{exclusive OR}, i.e. XOR.  We denote XOR by $\bigoplus$.  Given boolean values $p$ and $q$, $p\bigoplus q = 1$ exactly when one of $p$ and $q$ is equal to 1 and is 0 for all other combinations of $p$ and $q$.  We can write $p\bigoplus q$ in terms of the other operators as
+\[
+p\bigoplus q = (p\vee q)\wedge \neg(p\wedge q).
+\]
+This is justified in Table~\ref{table:logical_xor}.
+\begin{table}
+			\begin{center}
+			\begin{tabular}{cccccc}
+				$p$ & $q$ & $p\vee q$ & $p\wedge q$ & $(p\vee q)\wedge \neg (p\wedge q)$ & $p\bigoplus q$  \\ \hline
+				0  &   0   &    0          &        0        & 0   &  0         \\
+				0  &   1   &    1          &        0        & 1   &  1         \\
+				1  &   0   &    1          &        0        & 1   &  1         \\
+				1  &   1   &    1          &        1        & 0   &  0         \\
+			\end{tabular}
+			\end{center}\caption{Logical XOR}\label{table:logical_xor}
+\end{table}
+The XOR gate is in Figure~\ref{figure:xor_gate}.
+\begin{figure}
+	\begin{center}
+	\includegraphics[width = 3.00in]{XOR_Gate.png}
+	\end{center}\caption{XOR-gate}\label{figure:xor_gate}
+\end{figure}
+
+For those who've worked with modular arithmetic, it is quite natural to identify the boolean values 0 and 1 with the elements of $\mathbb{Z}_2 = \{0, 1\}$ of the fields of integers modulo 2.  This is actually quite useful in the case of AND and XOR the operations denoted as $\wedge$ and $\bigoplus$ are equivalent to multiplication and addition in that setting.
+
+\section{The Half-Adder, Revisited}
+
+In this section, we will obtain a diagram for the half-adder in terms of basic logic gates.  This will be made easy with the help of Table~\ref{table:xor_and_half-adder}, which is quite evocative.
+\begin{table}
+	\begin{center}
+		\begin{tabular}{cccccc}
+			$b_1$ & $b_2$ & $b_1\bigoplus b_2$ & $b_1\wedge b_2$ & $s$ & $c_\text{out}$  \\ \hline
+			0  &   0   &    0          &        0        & 0   &  0         \\
+			0  &   1   &    1          &        0        & 1   &  0         \\
+			1  &   0   &    1          &        0        & 1   &  0         \\
+			1  &   1   &    0          &        1        & 0   &  1         \\
+		\end{tabular}
+	\end{center}\caption{A Comparison of XOR, AND, and the outputs of the half-adder}\label{table:xor_and_half-adder}
+\end{table}
+Note that $b_1\bigoplus b_2$ is exactly the same as $s$, the so-called sum of the half-adder.  Also note that $b_1\wedge b_2$ is exactly the same as $c_\text{out}$, the carry-out of the half-adder.
+
+Using this information and the associated logic gates, we can wire up our half-adder as in Figure~\ref{figure:half-adder_logic_gates}
+\begin{figure}
+	\begin{center}			
+		\includegraphics[width = 4.00in]{half_adder_diagram.png}
+	\end{center}\caption{Half-Adder in terms of Logic Gates}\label{figure:half-adder_logic_gates}
+\end{figure}
+
+Note that in diagrams such as these, we assume that crossing line segments do not interact unless there is a thick dot at the point of intersection.  There are no such thick dots in this diagram.
+
+This how leaves us with the task of writing the logic gates in terms of transistors.  This is a two-fold process: First we will show that AND, OR, and XOR can be written in terms of NAND; then we will show that NAND can be written in terms of transistors.  For the time being, we will hide the second of these behind a veil as would a skilled exotic dancer.  The first requires a little more logic.
+
+\section{Just a Little More Logic}
+
+We will now present some formulas form logic that will be of great use to us.  Their truth can be verified by creating truth tables for them.  We will do this ourselves in one case and leave the rest to the interested reader.
+
+Absorbtion:
+\begin{eqnarray}
+	p \vee p & = & p \\
+	p \wedge p & = & p
+\end{eqnarray}
+
+Involution: 
+\begin{equation}
+	\neg (\neg p) = p.
+\end{equation}
+
+De Morgan's Laws:
+\begin{eqnarray}
+	\neg (p\vee q) & = & \neg p \wedge \neg q  \\ \label{eqnarray:demorgan_1}
+	\neg (p\wedge q) & = & \neg p \vee \neg q \label{eqnarry:demorgan_2}	
+\end{eqnarray}
+
+To verify Equation~\ref{eqnarry:demorgan_2}, consider the truth table in Table~\ref{table:demorgan_2}.
+
+
+\begin{table}
+	\begin{center}		
+	\begin{tabular}{ccccccc}
+		$p$ & $q$ & $\neg p$ & $\neg q$ & $p \wedge q$ & $\neg(p \wedge q)$ & $\neg p \vee \neg q$  \\ \hline 
+		 0  & 0   &    1     &  1       &   0          &  1                 &    1                  \\
+		 0  & 1   &    1     &  0       &   0          &  1                 &    1                  \\
+		 1  & 0   &    0     &  1       &   0          &  1                 &    1                  \\
+		 1  & 1   &    0     &  0       &   1          &  0                 &    0                  \\		 		 		 
+	\end{tabular}
+	\end{center} \caption{Truth Table for Equation~\ref{eqnarry:demorgan_2}}\label{table:demorgan_2}
+\end{table}
+
+We will now talk about the following identities where we put NOT, AND, OR, and XOR in terms of NAND:
+\begin{enumerate}
+	\item $\neg p = p\uparrow p$ \label{identity:not}
+	\item $p\wedge q = (p\uparrow q)\uparrow (p\uparrow q)$ \label{identity:and}
+	\item $p\vee q = (p\uparrow p)\uparrow (q\uparrow q)$	\label{identity:or}
+	\item $p\bigoplus q = (p\uparrow(p\uparrow q))\uparrow (q\uparrow (p\uparrow q))$ \label{identity:xor}
+\end{enumerate}
+
+We will demonstrate these identities.  All of our demostrations are straight-forward calculations with the exception of (\ref{identity:xor}).
+
+
+To show (\ref{identity:not})  we make use of absorbtion to show:
+\begin{eqnarray*}
+ \neg p & = & \neg(p\wedge p) \\
+ 		& = & p \uparrow p
+\end{eqnarray*}
+
+We use involution and (\ref{identity:not}) to show:
+\begin{eqnarray*}
+	p \wedge q & = & \neg \neg (p\wedge q) \\
+	           & = & \neg (p\uparrow q) \\
+	           & = & (p\uparrow q) \uparrow (p\uparrow q)
+\end{eqnarray*}
+
+We can now apply absorbtion, (\ref{eqnarray:demorgan_1}), and (\ref{identity:or}) to show:
+\begin{eqnarray}
+	p \vee q &=& \neg (\neg p \wedge \neg q) \\
+	         &=& \neg p \uparrow \neg q \\
+	         &=& (p\uparrow p) \uparrow (q\uparrow q)
+\end{eqnarray}
+
+Making a truth table is the easiest way to verify (\ref{identity:xor}), and we leave this to the reader.  Using the forumlas (\ref{identity:not}) - (\ref{identity:xor}), we can create diagrams for AND, OR, and XOR in terms of NAND in Figures \ref{figure:and_in_terms_of_nand}-\ref{figure:xor_in_terms_of_nand}.
+\begin{figure}
+	\begin{center}
+	\includegraphics[width = 4in]{and_diagram.png}
+\end{center}\caption{AND in terms of NAND with inputs $b_1$ and $b_2$}\label{figure:and_in_terms_of_nand}
+\end{figure}
+\begin{figure}
+	\begin{center}
+		\includegraphics[width = 4in]{or_diagram.png}
+	\end{center}\caption{OR in terms of NAND with inputs $A$ and $B$}\label{figure:or_in_terms_of_nand}
+\end{figure}
+\begin{figure}
+	\begin{center}
+		\includegraphics[width = 4in]{xor_diagram.png}
+	\end{center}\caption{XOR in terms of NAND with inputs $A$ and $B$}\label{figure:xor_in_terms_of_nand}
+\end{figure}
+
+\section{Transistors and NAND}
+
+We now come to the last section which is the least mathematical part of the chapter.  We will talk about transistors.  To be precise, we are not talking about specific transistors, but about mathematically idealized transisitors.  To talk about specific transistors would require discussion of specific voltages, specific resistances, etc.  These details belong properly to the world of electronics or, dare we say, electrical engineering.  We won't go to that world--at least in this chapter.
+
+Indeed, we are going to limit ourselves to exactly one type of transistor: a mathematically idealized npn transistor.  See Figure~\ref{figure:npn_transistor}. 
+\begin{figure}
+	\begin{center}
+		\includegraphics[width = 4in]{npn_transistor_labeled.png}
+	\end{center}\caption{Mathematical npn Transistor}\label{figure:npn_transistor}
+\end{figure}
+In the figure, there are three distringuished points: $C$, $B$, and $E$.  We will call $C$ the \emph{collector}, $E$ the \emph{emitter}, and $B$ the \emph{base}.
+
+For pedagogical purposes, the collector and the emitter are well-named.  The collector is the place where electricity goes in, the place that collects it.  The emitter is the place where electricity goes out, the place that emits it.
+
+Pedagogically, it would have been better to refer to the base as the button.  If you apply a particular voltage to the base, the transistor will then allow current to pass from the collector to the emittor.  A voltage at $B$ allows current to go from $C$  and pass out of the transistor through $E$.  A transistor is an electronic switch.
+
+Now consider Figure~\ref{figure:nand_diagram}.
+\begin{figure}
+	\begin{center}
+		\includegraphics[width = 4in]{nand_diagram.png}
+	\end{center}\caption{A NAND gate in terms of npn Transistors}\label{figure:nand_diagram}
+\end{figure}
+There is voltage applied to point $V_\text{in}$.  In the diagram, proceeding downward from $V_\text{in}$, there is a branch point where our diagram separates into two paths: one horizonal; one vertical. At this point the current could go either horizontally to $C$ or it could proceed down vertically through two transistors that are connected in series.
+
+We will imagine the resistance from the branch point to $C$ to be a bit greater than that of the series of transistors when both of them are activated. \footnote{I \emph{resisted} the temptation to talk about resistors.}
+
+If $A$ and $B$ are both 1, then the current from $V_\text{in}$ will be allowed to go to ground.  This means there will be insufficient voltage at $C$, i.e. $C=0$.  Otherwise, $C=1$ because if either $A$ or $B$ is equal to 0 current will not be allows to pass through the series of transistors.  This is written in detail in Table~\ref{table:c_is_a_nand_b}.
+\begin{table}
+	\begin{center}
+		\begin{tabular}{cccc}
+			$A$ & $B$ & $C$ & $A\uparrow B$ \\ \hline 
+			0   & 0   &  1  & 1 \\ 
+			0   & 1   &  1  & 1 \\ 
+			1   & 0   &  1  & 1 \\ 
+			1   & 1   &  0  & 0 									
+		\end{tabular}
+	\end{center}\caption{$C$ is $A\uparrow B$}\label{table:c_is_a_nand_b}
+\end{table}
+We see that the value at $C$ is $A\uparrow B$.
+
+\section{Epilog}
+
+We are at the end of our journey.  In principle, you could build an electronic device to add numbers.  This would require using transistors to make NAND gates: NAND gates to make the various other logic gates; and the various other logic gates to make half-adders and full-adders.  When it is all put together, it is a very complicated device. 
+
+There have been sturdy individuals who've done just that.  I doff my hat to them.  For my part, I am in a state of awe to those who created the means of tackling such complexity.

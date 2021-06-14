@@ -1,0 +1,19 @@
+\chapter{Integer Division}
+
+\section{The Division Algorithm}
+\subsection{A Thought Experiment}
+
+Suppose that you are playing a game of cards with your friends.  You have a deck of $n$ cards and there are $d$ players in the game.  In this particular game, the practice is to deal out an equal number of cards to each player and to deal out cards until it is no longer possible to do so.
+
+Dealing cards is something most of us have done, but let's review the process.  When you deal cards, in order to make sure everyone gets the same number of cards, you do it in rounds.  On a given round, either you deal one card to each player or you don't deal to anyone.  This requires the dealer to compare the number of undealt to the number of players.
+
+As all of the cards are to be dealt out, the prcess will continue until you are unable to deal.  This means you will come to a round where you cannot deal cards to every player.  Let $r$ be the number of cards that are left over.  It is possible that all of the cards have been dealt out, so that $r = 0$, but we know for certain that $r < d$ (recall $d$ is the number of players) because if $r \ge d$, we would be able to deal another round.
+
+When we are done, each player will have the same number of cards.  Let's say this number is $q$.  Given this, we can now express $n$, the original number of cards, in the following way:
+\[
+n = d q + r
+\] 
+where $0\le r < d$.
+
+\subsection{The Division Algorithm}
+
